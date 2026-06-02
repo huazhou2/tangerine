@@ -1,0 +1,12 @@
+Section,Dataset_or_Year,Total_Cases,Positive_Cases,Negative_Cases,Positive_Rate_Percent,AUC_or_Notes
+TRAIN_VAL_TEST,Train,6074,272,5802,4.5%,"ct_date < 2021-01-01 (2010-2020)"
+TRAIN_VAL_TEST,Validation,2941,87,2854,3.0%,"2021-01-01 to 2021-12-31"
+TRAIN_VAL_TEST,Test,5621,110,5511,2.0%,"ct_date >= 2022-01-02 (2022-2023)"
+TRAIN_VAL_TEST,Total,14636,469,14167,3.2%,"All splits combined"
+,,,,,
+YEAR_BY_YEAR_AUC,Year 1,5609,98,5511,1.7%,0.726
+YEAR_BY_YEAR_AUC,Year 2,3432,110,3322,3.2%,0.806
+YEAR_BY_YEAR_AUC,Year 3,413,110,303,26.6%,0.805
+YEAR_BY_YEAR_AUC,Year 4,114,110,4,96.5%,"0.973 (selection bias!)"
+YEAR_BY_YEAR_AUC,Year 5,110,110,0,100.0%,"NaN (no negatives)"
+YEAR_BY_YEAR_AUC,Year 6,110,110,0,100.0%,"NaN (no negatives)"

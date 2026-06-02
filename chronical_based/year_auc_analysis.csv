@@ -1,0 +1,7 @@
+Year,Positive_Cases,Negative_Cases,Total_Evaluable,Positive_Rate_Percent,AUC,Explanation
+1,98,5511,5609,1.7,0.726,Very imbalanced - hard to find 98 cancer cases among 5511 non-cancer
+2,110,3322,3432,3.2,0.806,Still very imbalanced - 110 cancer in 3432 total
+3,110,303,413,26.6,0.805,Now moderately balanced - mix of classes
+4,110,4,114,96.5,0.973,Almost all positive! Only 4 negatives - trivially easy to separate (SELECTION BIAS)
+5,110,0,110,100.0,NaN,No negatives - AUC undefined (insufficient follow-up time)
+6,110,0,110,100.0,NaN,No negatives - AUC undefined (insufficient follow-up time)
