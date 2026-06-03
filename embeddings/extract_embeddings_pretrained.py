@@ -28,6 +28,7 @@ from tqdm import tqdm
 from extract_embeddings import (
     reduce_embeddings,
     plot_lrads, plot_cancer, plot_categorical, plot_age,
+    RACE_SHORTMAP,  # Import race label shortening
 )
 from survival_dataset import LungCancerSurvivalDataset
 
@@ -92,8 +93,13 @@ def extract_embeddings(encoder, dataset, device, batch_size=4, layer=-1):
 
 
 def main(args):
-    output_dir = Path(args.output_dir)
+    # Create subfolders: trained/, pretrain/, combined/
+    # (This script runs for pretrained model, so save to 'pretrain/')
+    base_output = Path(args.output_dir)
+    output_dir = base_output / 'pretrain'
+    combined_dir = base_output / 'combined'
     output_dir.mkdir(parents=True, exist_ok=True)
+    combined_dir.mkdir(parents=True, exist_ok=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
@@ -162,6 +168,12 @@ def main(args):
     else:
         meta['ct_era'] = None
 
+    # Shorten race labels for better plot display
+    if 'race' in meta.columns:
+        meta['race'] = meta['race'].replace(RACE_SHORTMAP)
+    if 'lrads_category_base' in meta.columns:
+        meta['lrads_category_base'] = meta['lrads_category_base'].replace(RACE_SHORTMAP)
+
     meta.to_csv(output_dir / f'embeddings_meta_{layer_tag}.csv', index=False)
 
     # UMAP
@@ -224,7 +236,8 @@ def main(args):
     fig.suptitle(
         f'TANGERINE pretrained (no fine-tuning) — {N} scans — {layer_tag}', fontsize=13)
     fig.tight_layout()
-    fig.savefig(output_dir / f'umap_combined_{layer_tag}.png', dpi=150)
+    # Save combined plots to shared 'combined' folder
+    fig.savefig(combined_dir / f'umap_combined_{layer_tag}.png', dpi=150)
     plt.close(fig)
     print(f'Saved umap_combined_{layer_tag}.png')
     print(f'\nAll outputs in: {output_dir}')

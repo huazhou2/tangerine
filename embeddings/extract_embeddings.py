@@ -42,6 +42,14 @@ from survival_dataset import LungCancerSurvivalDataset
 
 MAX_FOLLOWUP = 6
 
+# Race label shortening for better plot display
+RACE_SHORTMAP = {
+    'American Indian or Alaska Native': 'Am. Indian',
+    'Native Hawaiian or Pacific Islander': 'Pac. Islander',
+    'Not Reported': 'Not Reported',
+    'Unknown': 'Unknown',
+}
+
 
 # ── Model loader (same pattern as extract_attention_maps.py) ──────────────────
 
@@ -262,8 +270,13 @@ def plot_age(ax, xy, age, method_name):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main(args):
-    output_dir = Path(args.output_dir)
+    # Create subfolders: trained/, pretrain/, combined/
+    # (This script runs for fine-tuned model, so save to 'trained/')
+    base_output = Path(args.output_dir)
+    output_dir = base_output / 'trained'
+    combined_dir = base_output / 'combined'
     output_dir.mkdir(parents=True, exist_ok=True)
+    combined_dir.mkdir(parents=True, exist_ok=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
@@ -362,6 +375,12 @@ def main(args):
     else:
         meta['ct_era'] = None
 
+    # Shorten race labels for better plot display
+    if 'race' in meta.columns:
+        meta['race'] = meta['race'].replace(RACE_SHORTMAP)
+    if 'lrads_category_base' in meta.columns:
+        meta['lrads_category_base'] = meta['lrads_category_base'].replace(RACE_SHORTMAP)
+
     meta.to_csv(output_dir / f'embeddings_meta_{layer_tag}.csv', index=False)
     print(f'Saved embeddings_meta_{layer_tag}.csv')
 
@@ -434,9 +453,10 @@ def main(args):
     fig.suptitle(f'TANGERINE embeddings — {N} scans — {layer_tag} (dim={emb_arr.shape[1]})',
                  fontsize=13)
     fig.tight_layout()
-    fig.savefig(output_dir / f'umap_combined_{layer_tag}.png', dpi=150)
+    # Save combined plots to shared 'combined' folder
+    fig.savefig(combined_dir / f'umap_combined_{layer_tag}.png', dpi=150)
     plt.close(fig)
-    print(f'Saved umap_combined_{layer_tag}.png')
+    print(f'Saved umap_combined_{layer_tag}.png to combined/')
 
     print(f'\nAll outputs in: {output_dir}')
 
