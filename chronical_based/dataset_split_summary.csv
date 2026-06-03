@@ -1,0 +1,5 @@
+Dataset,Total_Patients,Cancer_Positive,Cancer_Negative,Cancer_Rate_Percent,Notes
+Train,6074,272,5802,4.5,ct_date < 2021-01-01 (2010-2020)
+Validation,2941,87,2854,3.0,2021-01-01 <= ct_date < 2022-01-01
+Test,5621,110,5511,2.0,ct_date >= 2022-01-02 (2022-2023)
+Total,14636,469,14167,3.2,
