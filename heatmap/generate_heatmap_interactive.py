@@ -85,16 +85,18 @@ def generate_all_heatmap_data(parent_dir):
 
     heatmap_data = {}
 
+    # Get consistent cancer patient list for all views
+    cancer_patients_list = sorted(data_multi[data_multi['cancer_pred'] == 1]['pat_id'].unique())
+    non_cancer_patients_list = sorted(data_multi[data_multi['cancer_pred'] == 0]['pat_id'].unique())
+
     for year in range(1, 7):
         print(f"Generating Year {year}...")
         data_multi['pred'] = data_multi[f'pred_{year}_pred']
 
         # Cancer-only
-        cancer_patients_list = data_multi[data_multi['cancer_pred'] == 1]['pat_id'].unique()
         data_cancer = data_multi[data_multi['pat_id'].isin(cancer_patients_list)].copy()
-        patient_ids_cancer = sorted(cancer_patients_list)
         pred_cancer, lrads_cancer, diag_cancer, display_ids_cancer = create_heatmap_data(
-            patient_ids_cancer, all_months, data_cancer, patient_id_map)
+            cancer_patients_list, all_months, data_cancer, patient_id_map)
 
         heatmap_data[f'year_{year}_cancer_only'] = {
             'pred': [[float(v) if not np.isnan(v) else None for v in row] for row in pred_cancer],
@@ -102,15 +104,15 @@ def generate_all_heatmap_data(parent_dir):
             'diagnosis': diag_cancer.tolist(),
             'patient_ids': display_ids_cancer,
             'month_labels': month_labels,
-            'n_cancer': len(patient_ids_cancer),
+            'n_cancer': len(cancer_patients_list),
             'n_non_cancer': 0,
-            'n_total': len(patient_ids_cancer),
+            'n_total': len(cancer_patients_list),
         }
 
         # Non-cancer only
-        data_non_cancer = data_multi[data_multi['pat_id'].isin(non_cancer_patients)].copy()
+        data_non_cancer = data_multi[data_multi['pat_id'].isin(non_cancer_patients_list)].copy()
         pred_non_cancer, lrads_non_cancer, diag_non_cancer, display_ids_non_cancer = create_heatmap_data(
-            non_cancer_patients, all_months, data_non_cancer, patient_id_map)
+            non_cancer_patients_list, all_months, data_non_cancer, patient_id_map)
 
         heatmap_data[f'year_{year}_non_cancer_only'] = {
             'pred': [[float(v) if not np.isnan(v) else None for v in row] for row in pred_non_cancer],
@@ -119,13 +121,13 @@ def generate_all_heatmap_data(parent_dir):
             'patient_ids': display_ids_non_cancer,
             'month_labels': month_labels,
             'n_cancer': 0,
-            'n_non_cancer': len(non_cancer_patients),
-            'n_total': len(non_cancer_patients),
+            'n_non_cancer': len(non_cancer_patients_list),
+            'n_total': len(non_cancer_patients_list),
         }
 
-        # All patients
+        # All patients - cancer on top, then non-cancer
         pred_all, lrads_all, diag_all, display_ids_all = create_heatmap_data(
-            cancer_patients + non_cancer_patients, all_months, data_multi, patient_id_map)
+            cancer_patients_list + non_cancer_patients_list, all_months, data_multi, patient_id_map)
 
         heatmap_data[f'year_{year}_all_patients'] = {
             'pred': [[float(v) if not np.isnan(v) else None for v in row] for row in pred_all],
@@ -133,9 +135,9 @@ def generate_all_heatmap_data(parent_dir):
             'diagnosis': diag_all.tolist(),
             'patient_ids': display_ids_all,
             'month_labels': month_labels,
-            'n_cancer': len(cancer_patients),
-            'n_non_cancer': len(non_cancer_patients),
-            'n_total': len(cancer_patients) + len(non_cancer_patients),
+            'n_cancer': len(cancer_patients_list),
+            'n_non_cancer': len(non_cancer_patients_list),
+            'n_total': len(cancer_patients_list) + len(non_cancer_patients_list),
         }
 
     return heatmap_data
@@ -317,8 +319,8 @@ def create_html_dashboard(heatmap_data, output_dir):
                 title: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
                 xaxis: { title: 'Month', type: 'category' },
                 yaxis: { title: 'Patient ID', type: 'category' },
-                height: Math.max(600, Math.min(d.patient_ids.length * 20, 2000)),
-                margin: { l: 120, b: 80, t: 60, r: 80 },
+                height: Math.max(600, Math.min(d.patient_ids.length * 15, 1800)),
+                margin: { l: 120, b: 60, t: 50, r: 80 },
                 hovermode: 'closest',
                 shapes: annotations
             };
