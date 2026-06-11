@@ -315,11 +315,21 @@ def create_html_dashboard(heatmap_data, output_dir):
                 });
             }
 
+            // Calculate height based on patient count, but keep it reasonable
+            let height = 600;
+            if (d.patient_ids.length <= 12) {
+                height = 600 + d.patient_ids.length * 20;  // Cancer-only: taller rows
+            } else if (d.patient_ids.length <= 50) {
+                height = Math.min(800 + d.patient_ids.length * 8, 1800);  // Non-cancer: medium rows
+            } else {
+                height = Math.min(1200 + d.patient_ids.length * 4, 2400);  // All-patients: compact rows
+            }
+
             const layout = {
                 title: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
                 xaxis: { title: 'Month', type: 'category' },
                 yaxis: { title: 'Patient ID', type: 'category' },
-                height: Math.max(600, Math.min(d.patient_ids.length * 15, 1800)),
+                height: height,
                 margin: { l: 120, b: 60, t: 50, r: 80 },
                 hovermode: 'closest',
                 shapes: annotations
