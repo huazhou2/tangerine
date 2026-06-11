@@ -414,11 +414,15 @@ def create_html_dashboard(heatmap_data, output_dir):
                 });
             });
 
-            // Create trace - IMPORTANT: x and y must match annotation labels
+            // Create numeric indices for heatmap (0, 1, 2, ...)
+            const xIndices = Array.from({length: nMonths}, (_, i) => i);
+            const yIndices = Array.from({length: nPatients}, (_, i) => i);
+
+            // Create trace with numeric indices
             const trace = {
                 z: data.pred,
-                x: data.month_labels,  // String labels for x-axis
-                y: data.patient_ids,   // String labels for y-axis
+                x: xIndices,
+                y: yIndices,
                 type: 'heatmap',
                 colorscale: 'RdYlGn-r',
                 zmin: 0,
@@ -432,9 +436,45 @@ def create_html_dashboard(heatmap_data, output_dir):
                 }
             };
 
+            // Adjust annotations to use numeric indices
+            const numericAnnotations = [];
+            for (let i = 0; i < nPatients; i++) {
+                for (let j = 0; j < nMonths; j++) {
+                    // LRADS annotation
+                    if (data.lrads[i] && data.lrads[i][j] !== null && !isNaN(data.lrads[i][j])) {
+                        numericAnnotations.push({
+                            x: j,
+                            y: i,
+                            text: `${Math.round(data.lrads[i][j])}`,
+                            showarrow: false,
+                            font: { size: 10, color: 'black', family: 'monospace', weight: 'bold' },
+                            xanchor: 'center',
+                            yanchor: 'middle',
+                            bgcolor: 'rgba(255, 255, 255, 0.8)',
+                            bordercolor: 'black',
+                            borderwidth: 0.5,
+                            borderpad: 1
+                        });
+                    }
+
+                    // Diagnosis marker
+                    if (data.diagnosis[i] && data.diagnosis[i][j]) {
+                        numericAnnotations.push({
+                            x: j,
+                            y: i,
+                            text: '*',
+                            showarrow: false,
+                            font: { size: 22, color: 'purple', family: 'Arial', weight: 'bold' },
+                            xanchor: 'center',
+                            yanchor: 'middle'
+                        });
+                    }
+                }
+            }
+
             // Calculate dynamic height based on number of patients
             const minHeight = 600;
-            const heightPerPatient = 25;
+            const heightPerPatient = 30;
             const plotHeight = Math.max(minHeight, nPatients * heightPerPatient);
 
             const layout = {
@@ -445,24 +485,27 @@ def create_html_dashboard(heatmap_data, output_dir):
                 },
                 xaxis: {
                     title: 'Year-Month',
+                    tickmode: 'linear',
+                    tick0: 0,
+                    dtick: Math.max(1, Math.floor(nMonths / 12)),
+                    ticktext: data.month_labels.filter((_, i) => i % Math.max(1, Math.floor(nMonths / 12)) === 0),
+                    tickvals: data.month_labels.map((_, i) => i).filter(i => i % Math.max(1, Math.floor(nMonths / 12)) === 0),
                     tickangle: 45,
-                    tickfont: { size: 11 },
-                    type: 'category',  // Explicitly set as category
-                    categoryorder: 'array',
-                    categoryarray: data.month_labels
+                    tickfont: { size: 11 }
                 },
                 yaxis: {
                     title: 'Patient ID',
-                    tickfont: { size: 10 },
-                    type: 'category',  // Explicitly set as category
-                    categoryorder: 'array',
-                    categoryarray: data.patient_ids,
-                    autorange: 'reversed'
+                    tickmode: 'linear',
+                    tick0: 0,
+                    dtick: Math.max(1, Math.floor(nPatients / 20)),
+                    ticktext: data.patient_ids.filter((_, i) => i % Math.max(1, Math.floor(nPatients / 20)) === 0),
+                    tickvals: data.patient_ids.map((_, i) => i).filter(i => i % Math.max(1, Math.floor(nPatients / 20)) === 0),
+                    tickfont: { size: 10 }
                 },
                 height: plotHeight,
                 margin: { l: 120, b: 120, t: 140, r: 100 },
                 hovermode: 'closest',
-                annotations: annotations
+                annotations: numericAnnotations
             };
 
             Plotly.newPlot('heatmap', [trace], layout, {responsive: true, toImageButtonOptions: {format: 'png', width: 1400, height: plotHeight}});
