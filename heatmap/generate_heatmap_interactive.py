@@ -35,18 +35,22 @@ def load_data(parent_dir):
     return data_multi
 
 
-def create_heatmap_data(patient_ids, all_months_list, data_source):
+def create_heatmap_data(patient_ids, all_months_list, data_source, patient_id_map=None):
     """Create heatmap arrays: predictions, LRADS, diagnosis markers."""
     heatmap_pred = []
     heatmap_lrads = []
     diagnosis_month_marker = []
     patient_status = []
+    display_ids = []
 
     for pat_id in patient_ids:
         patient_scans = data_source[data_source['pat_id'] == pat_id].copy()
         patient_scans = patient_scans.sort_values('ct_date')
         diagnosis_date = patient_scans['first_lung_ca_date'].iloc[0]
         is_cancer = patient_scans['cancer_pred'].iloc[0] == 1
+
+        # Get display ID (use PatientID if available, else pat_id)
+        display_id = str(patient_id_map.get(pat_id, pat_id)) if patient_id_map else str(pat_id)
 
         pred_dict = {}
         lrads_dict = {}
@@ -69,15 +73,19 @@ def create_heatmap_data(patient_ids, all_months_list, data_source):
         heatmap_lrads.append(lrads_row)
         diagnosis_month_marker.append(diag_data)
         patient_status.append('cancer' if is_cancer else 'non-cancer')
+        display_ids.append(display_id)
 
     return (np.array(heatmap_pred), np.array(heatmap_lrads),
-            np.array(diagnosis_month_marker, dtype=bool), patient_status)
+            np.array(diagnosis_month_marker, dtype=bool), patient_status, display_ids)
 
 
 def generate_all_heatmap_data(parent_dir):
     """Generate heatmap data for all year/patient_type combinations."""
     data_multi = load_data(parent_dir)
     data_multi['year_month'] = data_multi['ct_date'].dt.to_period('M')
+
+    # Create mapping from pat_id to PatientID for display
+    patient_id_map = dict(zip(data_multi['pat_id'], data_multi['PatientID']))
 
     # Get time range (same for all)
     min_date = data_multi['ct_date'].min()
@@ -105,14 +113,14 @@ def generate_all_heatmap_data(parent_dir):
         data_cancer = data_multi[data_multi['pat_id'].isin(cancer_patients_list)].copy()
         patient_ids_cancer = sorted(cancer_patients_list)
 
-        pred_cancer, lrads_cancer, diag_cancer, status_cancer = create_heatmap_data(
-            patient_ids_cancer, all_months, data_cancer)
+        pred_cancer, lrads_cancer, diag_cancer, status_cancer, display_ids_cancer = create_heatmap_data(
+            patient_ids_cancer, all_months, data_cancer, patient_id_map)
 
         heatmap_data[f'year_{year}_cancer_only'] = {
             'pred': pred_cancer.tolist(),
             'lrads': lrads_cancer.tolist(),
             'diagnosis': diag_cancer.tolist(),
-            'patient_ids': [str(p) for p in patient_ids_cancer],
+            'patient_ids': display_ids_cancer,
             'patient_status': status_cancer,
             'month_labels': month_labels,
             'n_cancer': len(patient_ids_cancer),
@@ -122,14 +130,14 @@ def generate_all_heatmap_data(parent_dir):
 
         # Non-cancer only
         data_non_cancer = data_multi[data_multi['pat_id'].isin(non_cancer_patients)].copy()
-        pred_non_cancer, lrads_non_cancer, diag_non_cancer, status_non_cancer = create_heatmap_data(
-            non_cancer_patients, all_months, data_non_cancer)
+        pred_non_cancer, lrads_non_cancer, diag_non_cancer, status_non_cancer, display_ids_non_cancer = create_heatmap_data(
+            non_cancer_patients, all_months, data_non_cancer, patient_id_map)
 
         heatmap_data[f'year_{year}_non_cancer_only'] = {
             'pred': pred_non_cancer.tolist(),
             'lrads': lrads_non_cancer.tolist(),
             'diagnosis': diag_non_cancer.tolist(),
-            'patient_ids': [str(p) for p in non_cancer_patients],
+            'patient_ids': display_ids_non_cancer,
             'patient_status': status_non_cancer,
             'month_labels': month_labels,
             'n_cancer': 0,
@@ -138,14 +146,14 @@ def generate_all_heatmap_data(parent_dir):
         }
 
         # All patients
-        pred_all, lrads_all, diag_all, status_all = create_heatmap_data(
-            cancer_patients + non_cancer_patients, all_months, data_multi)
+        pred_all, lrads_all, diag_all, status_all, display_ids_all = create_heatmap_data(
+            cancer_patients + non_cancer_patients, all_months, data_multi, patient_id_map)
 
         heatmap_data[f'year_{year}_all_patients'] = {
             'pred': pred_all.tolist(),
             'lrads': lrads_all.tolist(),
             'diagnosis': diag_all.tolist(),
-            'patient_ids': [str(p) for p in cancer_patients + non_cancer_patients],
+            'patient_ids': display_ids_all,
             'patient_status': status_all,
             'month_labels': month_labels,
             'n_cancer': len(cancer_patients),
