@@ -318,17 +318,22 @@ def create_html_dashboard(heatmap_data, output_dir):
             // Calculate height based on patient count, but keep it reasonable
             let height = 600;
             if (d.patient_ids.length <= 12) {
-                height = 600 + d.patient_ids.length * 20;  // Cancer-only: taller rows
+                height = 600 + d.patient_ids.length * 20;  // Cancer-only: 20px per row
             } else if (d.patient_ids.length <= 50) {
-                height = Math.min(800 + d.patient_ids.length * 8, 1800);  // Non-cancer: medium rows
+                height = Math.min(800 + d.patient_ids.length * 10, 2000);  // Non-cancer: 10px per row
             } else {
-                height = Math.min(1200 + d.patient_ids.length * 4, 2400);  // All-patients: compact rows
+                height = Math.min(1200 + d.patient_ids.length * 6, 3000);  // All-patients: 6px per row
             }
 
             const layout = {
                 title: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
                 xaxis: { title: 'Month', type: 'category' },
-                yaxis: { title: 'Patient ID', type: 'category' },
+                yaxis: {
+                    title: 'Patient ID',
+                    type: 'category',
+                    categoryorder: 'array',
+                    categoryarray: d.patient_ids
+                },
                 height: height,
                 margin: { l: 120, b: 60, t: 50, r: 80 },
                 hovermode: 'closest',
