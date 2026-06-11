@@ -406,11 +406,11 @@ def create_html_dashboard(heatmap_data, output_dir):
                 });
             });
 
-            // Create trace
+            // Create trace - IMPORTANT: x and y must match annotation labels
             const trace = {
                 z: data.pred,
-                x: data.month_labels,
-                y: data.patient_ids,
+                x: data.month_labels,  // String labels for x-axis
+                y: data.patient_ids,   // String labels for y-axis
                 type: 'heatmap',
                 colorscale: 'RdYlGn-r',
                 zmin: 0,
@@ -438,13 +438,18 @@ def create_html_dashboard(heatmap_data, output_dir):
                 xaxis: {
                     title: 'Year-Month',
                     tickangle: 45,
-                    tickfont: { size: 11 }
+                    tickfont: { size: 11 },
+                    type: 'category',  // Explicitly set as category
+                    categoryorder: 'array',
+                    categoryarray: data.month_labels
                 },
                 yaxis: {
                     title: 'Patient ID',
                     tickfont: { size: 10 },
-                    type: 'category',
-                    autorange: true
+                    type: 'category',  // Explicitly set as category
+                    categoryorder: 'array',
+                    categoryarray: data.patient_ids,
+                    autorange: 'reversed'
                 },
                 height: plotHeight,
                 margin: { l: 120, b: 120, t: 140, r: 100 },
