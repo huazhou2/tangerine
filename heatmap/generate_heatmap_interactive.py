@@ -40,7 +40,7 @@ def create_heatmap_data(patient_ids, all_months_list, data_source):
     heatmap_pred = []
     heatmap_lrads = []
     diagnosis_month_marker = []
-    patient_status = []  # Track if patient is cancer or not
+    patient_status = []
 
     for pat_id in patient_ids:
         patient_scans = data_source[data_source['pat_id'] == pat_id].copy()
@@ -88,7 +88,7 @@ def generate_all_heatmap_data(parent_dir):
     all_months = pd.period_range(start=min_date.to_period('M'), end=max_date.to_period('M'), freq='M')
     month_labels = [str(m) for m in all_months]
 
-    # Get all patient lists (for all_patients view)
+    # Get all patient lists
     all_patients_sorted = sorted(data_multi['pat_id'].unique())
     cancer_patients = sorted([p for p in all_patients_sorted if data_multi[data_multi['pat_id']==p]['cancer_pred'].iloc[0] == 1])
     non_cancer_patients = sorted([p for p in all_patients_sorted if data_multi[data_multi['pat_id']==p]['cancer_pred'].iloc[0] == 0])
@@ -118,6 +118,23 @@ def generate_all_heatmap_data(parent_dir):
             'n_cancer': len(patient_ids_cancer),
             'n_non_cancer': 0,
             'n_total': len(patient_ids_cancer),
+        }
+
+        # Non-cancer only
+        data_non_cancer = data_multi[data_multi['pat_id'].isin(non_cancer_patients)].copy()
+        pred_non_cancer, lrads_non_cancer, diag_non_cancer, status_non_cancer = create_heatmap_data(
+            non_cancer_patients, all_months, data_non_cancer)
+
+        heatmap_data[f'year_{year}_non_cancer_only'] = {
+            'pred': pred_non_cancer.tolist(),
+            'lrads': lrads_non_cancer.tolist(),
+            'diagnosis': diag_non_cancer.tolist(),
+            'patient_ids': [str(p) for p in non_cancer_patients],
+            'patient_status': status_non_cancer,
+            'month_labels': month_labels,
+            'n_cancer': 0,
+            'n_non_cancer': len(non_cancer_patients),
+            'n_total': len(non_cancer_patients),
         }
 
         # All patients
@@ -209,21 +226,25 @@ def create_html_dashboard(heatmap_data, output_dir):
         .button-group {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         button {
             padding: 8px 15px;
-            background: #4CAF50;
-            color: white;
-            border: none;
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+            transition: all 0.3s;
         }
         button:hover {
-            background: #45a049;
+            background: #e0e0e0;
         }
         button.active {
             background: #2196F3;
+            color: white;
+            border-color: #2196F3;
         }
         .plot-container {
             background: white;
@@ -234,7 +255,6 @@ def create_html_dashboard(heatmap_data, output_dir):
         }
         #heatmap {
             width: 100%;
-            height: 800px;
         }
         .info {
             background: #e3f2fd;
@@ -243,6 +263,7 @@ def create_html_dashboard(heatmap_data, output_dir):
             border-radius: 4px;
             margin-bottom: 20px;
             color: #333;
+            font-size: 14px;
         }
         .footer {
             text-align: center;
@@ -259,9 +280,10 @@ def create_html_dashboard(heatmap_data, output_dir):
     </div>
 
     <div class="info">
-        <strong>How to use:</strong> Select a year and patient type below. Hover over cells to see values.
-        Red indicates high cancer probability, green indicates low probability.
-        Purple asterisks mark diagnosis month.
+        <strong>Legend:</strong>
+        Cell color = Cancer probability (red=high, green=low) |
+        Text numbers = LRADS score |
+        <span style="color: purple; font-weight: bold;">*</span> = Diagnosis month
     </div>
 
     <div class="controls">
@@ -281,6 +303,7 @@ def create_html_dashboard(heatmap_data, output_dir):
             <label>Patient Type:</label>
             <div class="button-group">
                 <button id="btnCancerOnly" class="active">Cancer Only</button>
+                <button id="btnNonCancerOnly">Non-Cancer Only</button>
                 <button id="btnAllPatients">All Patients</button>
             </div>
         </div>
@@ -309,23 +332,59 @@ def create_html_dashboard(heatmap_data, output_dir):
                 return;
             }
 
-            // Prepare hover text with LRADS and diagnosis info
+            const nPatients = data.patient_ids.length;
+            const nMonths = data.month_labels.length;
+
+            // Create annotations for LRADS and diagnosis markers
+            const annotations = [];
+
+            for (let i = 0; i < nPatients; i++) {
+                for (let j = 0; j < nMonths; j++) {
+                    // LRADS annotation
+                    if (data.lrads[i][j] !== null) {
+                        annotations.push({
+                            x: data.month_labels[j],
+                            y: data.patient_ids[i],
+                            text: `${Math.round(data.lrads[i][j])}`,
+                            showarrow: false,
+                            font: { size: 12, color: 'black', family: 'Arial Black' },
+                            xanchor: 'center',
+                            yanchor: 'middle'
+                        });
+                    }
+
+                    // Diagnosis marker
+                    if (data.diagnosis[i][j]) {
+                        annotations.push({
+                            x: data.month_labels[j],
+                            y: data.patient_ids[i],
+                            text: '*',
+                            showarrow: false,
+                            font: { size: 28, color: 'purple', family: 'Arial' },
+                            xanchor: 'center',
+                            yanchor: 'middle'
+                        });
+                    }
+                }
+            }
+
+            // Create hover text
             const hoverText = data.pred.map((row, i) => {
                 return row.map((pred, j) => {
                     let text = `Patient: ${data.patient_ids[i]}<br>`;
                     text += `Month: ${data.month_labels[j]}<br>`;
                     text += `Pred: ${pred === null ? 'N/A' : pred.toFixed(3)}<br>`;
                     if (data.lrads[i][j] !== null) {
-                        text += `LRADS: ${data.lrads[i][j]}<br>`;
+                        text += `LRADS: ${Math.round(data.lrads[i][j])}<br>`;
                     }
                     if (data.diagnosis[i][j]) {
-                        text += `<b>DIAGNOSIS MONTH</b>`;
+                        text += `<b style="color:purple;">DIAGNOSIS MONTH</b>`;
                     }
                     return text;
                 });
             });
 
-            // Create trace for heatmap
+            // Create trace
             const trace = {
                 z: data.pred,
                 x: data.month_labels,
@@ -337,17 +396,22 @@ def create_html_dashboard(heatmap_data, output_dir):
                 hovertemplate: '%{customdata}<extra></extra>',
                 customdata: hoverText,
                 colorbar: {
-                    title: `Year ${currentYear}<br>Cancer Prob`,
+                    title: `Year ${currentYear}<br>Cancer<br>Prob`,
                     thickness: 15,
                     len: 0.7,
                 }
             };
 
+            // Calculate dynamic height based on number of patients
+            const minHeight = 600;
+            const heightPerPatient = 25;
+            const plotHeight = Math.max(minHeight, nPatients * heightPerPatient);
+
             const layout = {
                 title: {
-                    text: `TANGERINE ${currentPatientType === 'cancer_only' ? 'Cancer-Only' : 'All Patients'} Predictions (Year ${currentYear})<br>` +
+                    text: `TANGERINE ${currentPatientType === 'cancer_only' ? 'Cancer-Only' : currentPatientType === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Predictions (Year ${currentYear})<br>` +
                           `<sub>n=${data.n_total} (Cancer=${data.n_cancer}, Non-Cancer=${data.n_non_cancer})</sub>`,
-                    font: { size: 18 }
+                    font: { size: 16 }
                 },
                 xaxis: {
                     title: 'Year-Month',
@@ -356,14 +420,17 @@ def create_html_dashboard(heatmap_data, output_dir):
                 },
                 yaxis: {
                     title: 'Patient ID',
-                    tickfont: { size: 10 }
+                    tickfont: { size: 10 },
+                    type: 'category',
+                    autorange: true
                 },
-                height: 800,
-                margin: { l: 150, b: 100, t: 120, r: 100 },
+                height: plotHeight,
+                margin: { l: 120, b: 120, t: 140, r: 100 },
                 hovermode: 'closest',
+                annotations: annotations
             };
 
-            Plotly.newPlot('heatmap', [trace], layout, {responsive: true});
+            Plotly.newPlot('heatmap', [trace], layout, {responsive: true, toImageButtonOptions: {format: 'png', width: 1400, height: plotHeight}});
         }
 
         // Event listeners
@@ -375,6 +442,15 @@ def create_html_dashboard(heatmap_data, output_dir):
         document.getElementById('btnCancerOnly').addEventListener('click', () => {
             currentPatientType = 'cancer_only';
             document.getElementById('btnCancerOnly').classList.add('active');
+            document.getElementById('btnNonCancerOnly').classList.remove('active');
+            document.getElementById('btnAllPatients').classList.remove('active');
+            updateHeatmap();
+        });
+
+        document.getElementById('btnNonCancerOnly').addEventListener('click', () => {
+            currentPatientType = 'non_cancer_only';
+            document.getElementById('btnNonCancerOnly').classList.add('active');
+            document.getElementById('btnCancerOnly').classList.remove('active');
             document.getElementById('btnAllPatients').classList.remove('active');
             updateHeatmap();
         });
@@ -383,6 +459,7 @@ def create_html_dashboard(heatmap_data, output_dir):
             currentPatientType = 'all_patients';
             document.getElementById('btnAllPatients').classList.add('active');
             document.getElementById('btnCancerOnly').classList.remove('active');
+            document.getElementById('btnNonCancerOnly').classList.remove('active');
             updateHeatmap();
         });
 
