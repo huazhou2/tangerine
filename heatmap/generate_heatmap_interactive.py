@@ -326,7 +326,10 @@ def create_html_dashboard(heatmap_data, output_dir):
             }
 
             const layout = {
-                title: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
+                title: {
+                    text: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
+                    y: 0.99
+                },
                 xaxis: { title: 'Month', type: 'category' },
                 yaxis: {
                     title: 'Patient ID',
@@ -336,7 +339,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                     autorange: 'reversed'
                 },
                 height: height,
-                margin: { l: 120, b: 20, t: 20, r: 80 },
+                margin: { l: 120, b: 20, t: 30, r: 80 },
                 hovermode: 'closest',
                 shapes: annotations
             };
