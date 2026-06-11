@@ -320,9 +320,9 @@ def create_html_dashboard(heatmap_data, output_dir):
             if (d.patient_ids.length <= 12) {
                 height = 600 + d.patient_ids.length * 20;  // Cancer-only: 20px per row
             } else if (d.patient_ids.length <= 50) {
-                height = 800 + d.patient_ids.length * 12;  // Non-cancer: 12px per row
+                height = 200 + d.patient_ids.length * 14;  // Non-cancer: 14px per row
             } else {
-                height = 1000 + d.patient_ids.length * 8;  // All-patients: 8px per row
+                height = 300 + d.patient_ids.length * 11;  // All-patients: 11px per row
             }
 
             const layout = {
