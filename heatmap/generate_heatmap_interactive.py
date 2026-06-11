@@ -307,7 +307,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                 xaxis: { title: 'Month', type: 'category' },
                 yaxis: { title: 'Patient ID', type: 'category' },
                 height: Math.max(600, d.patient_ids.length * 25),
-                margin: { l: 120, b: 120, t: 100, r: 100 },
+                margin: { l: 120, b: 100, t: 80, r: 80 },
                 hovermode: 'closest'
             };
 
