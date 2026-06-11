@@ -315,14 +315,14 @@ def create_html_dashboard(heatmap_data, output_dir):
                 });
             }
 
-            // Calculate height based on patient count, but keep it reasonable
+            // Calculate height based on patient count
             let height = 600;
             if (d.patient_ids.length <= 12) {
                 height = 600 + d.patient_ids.length * 20;  // Cancer-only: 20px per row
             } else if (d.patient_ids.length <= 50) {
-                height = Math.min(800 + d.patient_ids.length * 10, 2000);  // Non-cancer: 10px per row
+                height = 800 + d.patient_ids.length * 12;  // Non-cancer: 12px per row
             } else {
-                height = Math.min(1200 + d.patient_ids.length * 6, 3000);  // All-patients: 6px per row
+                height = 1000 + d.patient_ids.length * 8;  // All-patients: 8px per row
             }
 
             const layout = {
@@ -332,7 +332,8 @@ def create_html_dashboard(heatmap_data, output_dir):
                     title: 'Patient ID',
                     type: 'category',
                     categoryorder: 'array',
-                    categoryarray: d.patient_ids
+                    categoryarray: d.patient_ids,
+                    autorange: 'reversed'
                 },
                 height: height,
                 margin: { l: 120, b: 60, t: 50, r: 80 },
