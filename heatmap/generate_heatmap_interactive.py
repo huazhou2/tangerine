@@ -336,7 +336,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                     autorange: 'reversed'
                 },
                 height: height,
-                margin: { l: 120, b: 60, t: 50, r: 80 },
+                margin: { l: 120, b: 20, t: 20, r: 80 },
                 hovermode: 'closest',
                 shapes: annotations
             };
