@@ -156,8 +156,23 @@ def generate_all_heatmap_data(parent_dir):
     return heatmap_data
 
 
+def convert_nan_to_none(data):
+    """Convert NaN values to None for JSON serialization."""
+    if isinstance(data, dict):
+        return {k: convert_nan_to_none(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_nan_to_none(v) for v in data]
+    elif isinstance(data, float):
+        return None if np.isnan(data) else data
+    else:
+        return data
+
+
 def create_html_dashboard(heatmap_data, output_dir):
     """Create interactive HTML dashboard with Plotly."""
+
+    # Convert NaN to None for proper JSON serialization
+    heatmap_data = convert_nan_to_none(heatmap_data)
 
     html_content = """<!DOCTYPE html>
 <html lang="en">
@@ -341,26 +356,30 @@ def create_html_dashboard(heatmap_data, output_dir):
             for (let i = 0; i < nPatients; i++) {
                 for (let j = 0; j < nMonths; j++) {
                     // LRADS annotation
-                    if (data.lrads[i][j] !== null) {
+                    if (data.lrads[i] && data.lrads[i][j] !== null && !isNaN(data.lrads[i][j])) {
                         annotations.push({
-                            x: data.month_labels[j],
-                            y: data.patient_ids[i],
+                            x: j,
+                            y: i,
                             text: `${Math.round(data.lrads[i][j])}`,
                             showarrow: false,
-                            font: { size: 12, color: 'black', family: 'Arial Black' },
+                            font: { size: 11, color: 'black', family: 'monospace', weight: 'bold' },
                             xanchor: 'center',
-                            yanchor: 'middle'
+                            yanchor: 'middle',
+                            bgcolor: 'rgba(255, 255, 255, 0.7)',
+                            bordercolor: 'black',
+                            borderwidth: 0.5,
+                            borderpad: 1
                         });
                     }
 
                     // Diagnosis marker
-                    if (data.diagnosis[i][j]) {
+                    if (data.diagnosis[i] && data.diagnosis[i][j]) {
                         annotations.push({
-                            x: data.month_labels[j],
-                            y: data.patient_ids[i],
+                            x: j,
+                            y: i,
                             text: '*',
                             showarrow: false,
-                            font: { size: 28, color: 'purple', family: 'Arial' },
+                            font: { size: 24, color: 'purple', family: 'Arial', weight: 'bold' },
                             xanchor: 'center',
                             yanchor: 'middle'
                         });
@@ -371,14 +390,14 @@ def create_html_dashboard(heatmap_data, output_dir):
             // Create hover text
             const hoverText = data.pred.map((row, i) => {
                 return row.map((pred, j) => {
-                    let text = `Patient: ${data.patient_ids[i]}<br>`;
-                    text += `Month: ${data.month_labels[j]}<br>`;
-                    text += `Pred: ${pred === null ? 'N/A' : pred.toFixed(3)}<br>`;
-                    if (data.lrads[i][j] !== null) {
-                        text += `LRADS: ${Math.round(data.lrads[i][j])}<br>`;
+                    let text = `<b>Patient:</b> ${data.patient_ids[i]}<br>`;
+                    text += `<b>Month:</b> ${data.month_labels[j]}<br>`;
+                    text += `<b>Pred:</b> ${pred === null ? 'N/A' : pred.toFixed(3)}<br>`;
+                    if (data.lrads[i] && data.lrads[i][j] !== null && !isNaN(data.lrads[i][j])) {
+                        text += `<b>LRADS:</b> ${Math.round(data.lrads[i][j])}<br>`;
                     }
-                    if (data.diagnosis[i][j]) {
-                        text += `<b style="color:purple;">DIAGNOSIS MONTH</b>`;
+                    if (data.diagnosis[i] && data.diagnosis[i][j]) {
+                        text += `<b style="color:purple;">★ DIAGNOSIS MONTH</b>`;
                     }
                     return text;
                 });
