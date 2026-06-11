@@ -302,13 +302,25 @@ def create_html_dashboard(heatmap_data, output_dir):
                 showlegend: false
             };
 
+            // Add separator line for all-patients (between cancer and non-cancer)
+            const annotations = [];
+            if (ptype === 'all_patients' && d.n_cancer > 0) {
+                annotations.push({
+                    type: 'line',
+                    x0: -0.5, x1: d.month_labels.length - 0.5,
+                    y0: d.n_cancer - 0.5, y1: d.n_cancer - 0.5,
+                    line: { color: 'black', width: 2, dash: 'dash' }
+                });
+            }
+
             const layout = {
                 title: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
                 xaxis: { title: 'Month', type: 'category' },
                 yaxis: { title: 'Patient ID', type: 'category' },
-                height: Math.max(600, d.patient_ids.length * 25),
-                margin: { l: 120, b: 100, t: 80, r: 80 },
-                hovermode: 'closest'
+                height: Math.max(600, Math.min(d.patient_ids.length * 20, 2000)),
+                margin: { l: 120, b: 80, t: 60, r: 80 },
+                hovermode: 'closest',
+                shapes: annotations
             };
 
             Plotly.newPlot('heatmap', [trace, lradsTrace, diagnosisTrace], layout, {responsive: true});
