@@ -355,31 +355,34 @@ def create_html_dashboard(heatmap_data, output_dir):
 
             for (let i = 0; i < nPatients; i++) {
                 for (let j = 0; j < nMonths; j++) {
+                    const monthLabel = data.month_labels[j];
+                    const patientId = data.patient_ids[i];
+
                     // LRADS annotation
                     if (data.lrads[i] && data.lrads[i][j] !== null && !isNaN(data.lrads[i][j])) {
                         annotations.push({
-                            x: j,
-                            y: i,
+                            x: monthLabel,
+                            y: patientId,
                             text: `${Math.round(data.lrads[i][j])}`,
                             showarrow: false,
                             font: { size: 11, color: 'black', family: 'monospace', weight: 'bold' },
                             xanchor: 'center',
                             yanchor: 'middle',
-                            bgcolor: 'rgba(255, 255, 255, 0.7)',
+                            bgcolor: 'rgba(255, 255, 255, 0.8)',
                             bordercolor: 'black',
                             borderwidth: 0.5,
-                            borderpad: 1
+                            borderpad: 2
                         });
                     }
 
                     // Diagnosis marker
                     if (data.diagnosis[i] && data.diagnosis[i][j]) {
                         annotations.push({
-                            x: j,
-                            y: i,
+                            x: monthLabel,
+                            y: patientId,
                             text: '*',
                             showarrow: false,
-                            font: { size: 24, color: 'purple', family: 'Arial', weight: 'bold' },
+                            font: { size: 28, color: 'purple', family: 'Arial', weight: 'bold' },
                             xanchor: 'center',
                             yanchor: 'middle'
                         });
