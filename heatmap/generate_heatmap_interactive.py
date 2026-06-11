@@ -259,6 +259,49 @@ def create_html_dashboard(heatmap_data, output_dir):
                 colorbar: { title: `Y${year}` }
             };
 
+            // Create overlay traces for LRADS (text) and diagnosis (*)
+            const lradsX = [], lradsY = [], lradsText = [];
+            const diagnosisX = [], diagnosisY = [], diagnosisText = [];
+
+            for (let i = 0; i < d.patient_ids.length; i++) {
+                for (let j = 0; j < d.month_labels.length; j++) {
+                    // LRADS overlay
+                    if (d.lrads[i][j] !== null) {
+                        lradsX.push(d.month_labels[j]);
+                        lradsY.push(d.patient_ids[i]);
+                        lradsText.push(String(Math.round(d.lrads[i][j])));
+                    }
+                    // Diagnosis overlay
+                    if (d.diagnosis[i][j]) {
+                        diagnosisX.push(d.month_labels[j]);
+                        diagnosisY.push(d.patient_ids[i]);
+                        diagnosisText.push('*');
+                    }
+                }
+            }
+
+            const lradsTrace = {
+                x: lradsX,
+                y: lradsY,
+                text: lradsText,
+                type: 'scatter',
+                mode: 'text',
+                textfont: { size: 11, color: 'black', weight: 'bold' },
+                hoverinfo: 'skip',
+                showlegend: false
+            };
+
+            const diagnosisTrace = {
+                x: diagnosisX,
+                y: diagnosisY,
+                text: diagnosisText,
+                type: 'scatter',
+                mode: 'text',
+                textfont: { size: 22, color: 'purple', weight: 'bold' },
+                hoverinfo: 'skip',
+                showlegend: false
+            };
+
             const layout = {
                 title: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
                 xaxis: { title: 'Month', type: 'category' },
@@ -268,7 +311,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                 hovermode: 'closest'
             };
 
-            Plotly.newPlot('heatmap', [trace], layout, {responsive: true});
+            Plotly.newPlot('heatmap', [trace, lradsTrace, diagnosisTrace], layout, {responsive: true});
         }
 
         document.getElementById('yearSelect').addEventListener('change', e => {
