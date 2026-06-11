@@ -1,4 +1,4 @@
-"""TANGERINE Interactive Heatmap Generator
+"""TANGERINE Interactive Heatmap Generator - Simplified Version
 Creates an HTML dashboard with interactive year and patient type selectors.
 
 Usage:
@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 import json
 import os
-import argparse
 from pathlib import Path
 
 
@@ -49,7 +48,6 @@ def create_heatmap_data(patient_ids, all_months_list, data_source, patient_id_ma
         diagnosis_date = patient_scans['first_lung_ca_date'].iloc[0]
         is_cancer = patient_scans['cancer_pred'].iloc[0] == 1
 
-        # Get display ID (use PatientID if available, else pat_id)
         display_id = str(patient_id_map.get(pat_id, pat_id)) if patient_id_map else str(pat_id)
 
         pred_dict = {}
@@ -79,6 +77,18 @@ def create_heatmap_data(patient_ids, all_months_list, data_source, patient_id_ma
             np.array(diagnosis_month_marker, dtype=bool), patient_status, display_ids)
 
 
+def convert_nan_to_none(data):
+    """Convert NaN values to None for JSON serialization."""
+    if isinstance(data, dict):
+        return {k: convert_nan_to_none(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_nan_to_none(v) for v in data]
+    elif isinstance(data, float):
+        return None if np.isnan(data) else data
+    else:
+        return data
+
+
 def generate_all_heatmap_data(parent_dir):
     """Generate heatmap data for all year/patient_type combinations."""
     data_multi = load_data(parent_dir)
@@ -87,7 +97,7 @@ def generate_all_heatmap_data(parent_dir):
     # Create mapping from pat_id to PatientID for display
     patient_id_map = dict(zip(data_multi['pat_id'], data_multi['PatientID']))
 
-    # Get time range (same for all)
+    # Get time range
     min_date = data_multi['ct_date'].min()
     max_date = data_multi['ct_date'].max()
     max_diagnosis = data_multi['first_lung_ca_date'].max()
@@ -96,14 +106,13 @@ def generate_all_heatmap_data(parent_dir):
     all_months = pd.period_range(start=min_date.to_period('M'), end=max_date.to_period('M'), freq='M')
     month_labels = [str(m) for m in all_months]
 
-    # Get all patient lists
+    # Get patient lists
     all_patients_sorted = sorted(data_multi['pat_id'].unique())
     cancer_patients = sorted([p for p in all_patients_sorted if data_multi[data_multi['pat_id']==p]['cancer_pred'].iloc[0] == 1])
     non_cancer_patients = sorted([p for p in all_patients_sorted if data_multi[data_multi['pat_id']==p]['cancer_pred'].iloc[0] == 0])
 
     heatmap_data = {}
 
-    # Generate for all years and patient types
     for year in range(1, 7):
         print(f"Generating data for Year {year}...")
         data_multi['pred'] = data_multi[f'pred_{year}_pred']
@@ -164,22 +173,8 @@ def generate_all_heatmap_data(parent_dir):
     return heatmap_data
 
 
-def convert_nan_to_none(data):
-    """Convert NaN values to None for JSON serialization."""
-    if isinstance(data, dict):
-        return {k: convert_nan_to_none(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [convert_nan_to_none(v) for v in data]
-    elif isinstance(data, float):
-        return None if np.isnan(data) else data
-    else:
-        return data
-
-
 def create_html_dashboard(heatmap_data, output_dir):
     """Create interactive HTML dashboard with Plotly."""
-
-    # Convert NaN to None for proper JSON serialization
     heatmap_data = convert_nan_to_none(heatmap_data)
 
     html_content = """<!DOCTYPE html>
@@ -190,110 +185,22 @@ def create_html_dashboard(heatmap_data, output_dir):
     <title>TANGERINE Interactive Heatmaps</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        h1 {
-            color: #333;
-            margin: 0;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .controls {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        label {
-            font-weight: bold;
-            color: #333;
-        }
-        select, button {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-            background: white;
-            transition: all 0.3s;
-        }
-        select:hover, button:hover {
-            border-color: #999;
-            background: #f9f9f9;
-        }
-        select:focus {
-            outline: none;
-            border-color: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-        }
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        button {
-            padding: 8px 15px;
-            background: #f0f0f0;
-            color: #333;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: #e0e0e0;
-        }
-        button.active {
-            background: #2196F3;
-            color: white;
-            border-color: #2196F3;
-        }
-        .plot-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        #heatmap {
-            width: 100%;
-        }
-        .info {
-            background: #e3f2fd;
-            padding: 15px;
-            border-left: 4px solid #2196F3;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            color: #333;
-            font-size: 14px;
-        }
-        .footer {
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-            margin-top: 30px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .header { text-align: center; margin-bottom: 30px; }
+        h1 { color: #333; margin: 0; }
+        .subtitle { color: #666; font-size: 14px; margin-top: 5px; }
+        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;
+                   box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; gap: 30px; flex-wrap: wrap; align-items: center; }
+        .control-group { display: flex; align-items: center; gap: 10px; }
+        label { font-weight: bold; color: #333; }
+        select, button { padding: 8px 15px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;
+                        cursor: pointer; background: white; }
+        button { background: #f0f0f0; color: #333; }
+        button.active { background: #2196F3; color: white; border-color: #2196F3; }
+        .plot-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        #heatmap { width: 100%; }
+        .info { background: #e3f2fd; padding: 15px; border-left: 4px solid #2196F3; border-radius: 4px;
+               margin-bottom: 20px; color: #333; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -303,10 +210,8 @@ def create_html_dashboard(heatmap_data, output_dir):
     </div>
 
     <div class="info">
-        <strong>Legend:</strong>
-        Cell color = Cancer probability (red=high, green=low) |
-        Text numbers = LRADS score |
-        <span style="color: purple; font-weight: bold;">*</span> = Diagnosis month
+        <strong>Legend:</strong> Green=low risk, Yellow=medium risk, Red=high risk |
+        Numbers=LRADS score | <span style="color:purple;font-weight:bold;">*</span>=Diagnosis month
     </div>
 
     <div class="controls">
@@ -321,10 +226,9 @@ def create_html_dashboard(heatmap_data, output_dir):
                 <option value="6">Year 6</option>
             </select>
         </div>
-
         <div class="control-group">
             <label>Patient Type:</label>
-            <div class="button-group">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <button id="btnCancerOnly" class="active">Cancer Only</button>
                 <button id="btnNonCancerOnly">Non-Cancer Only</button>
                 <button id="btnAllPatients">All Patients</button>
@@ -336,67 +240,33 @@ def create_html_dashboard(heatmap_data, output_dir):
         <div id="heatmap"></div>
     </div>
 
-    <div class="footer">
-        Generated from TANGERINE dataset | Sybil year-wise predictions with LRADS overlays
-    </div>
-
     <script>
         const heatmapData = """ + json.dumps(heatmap_data) + """;
 
         let currentYear = 1;
         let currentPatientType = 'cancer_only';
 
-        function updateHeatmap() {
-            const dataKey = `year_${currentYear}_${currentPatientType}`;
-            const data = heatmapData[dataKey];
+        // RdYlGn_r: Red(high) → Yellow → Green(low)
+        const rdylgn_r = [
+            [0, 'rgb(0, 104, 157)'],       // Dark green (low)
+            [0.25, 'rgb(33, 180, 226)'],   // Light blue-green
+            [0.4, 'rgb(171, 217, 233)'],   // Very light blue
+            [0.5, 'rgb(254, 224, 144)'],   // Yellow
+            [0.6, 'rgb(253, 174, 97)'],    // Orange
+            [0.8, 'rgb(215, 48, 39)'],     // Red
+            [1, 'rgb(165, 0, 38)']         // Dark red (high)
+        ];
 
+        function updateHeatmap() {
+            const key = `year_${currentYear}_${currentPatientType}`;
+            const data = heatmapData[key];
             if (!data) {
-                console.error('Data not found for:', dataKey);
+                console.error('No data for:', key);
                 return;
             }
 
             const nPatients = data.patient_ids.length;
             const nMonths = data.month_labels.length;
-
-            // Create annotations for LRADS and diagnosis markers
-            const annotations = [];
-
-            for (let i = 0; i < nPatients; i++) {
-                for (let j = 0; j < nMonths; j++) {
-                    const monthLabel = data.month_labels[j];
-                    const patientId = data.patient_ids[i];
-
-                    // LRADS annotation
-                    if (data.lrads[i] && data.lrads[i][j] !== null && !isNaN(data.lrads[i][j])) {
-                        annotations.push({
-                            x: monthLabel,
-                            y: patientId,
-                            text: `${Math.round(data.lrads[i][j])}`,
-                            showarrow: false,
-                            font: { size: 11, color: 'black', family: 'monospace', weight: 'bold' },
-                            xanchor: 'center',
-                            yanchor: 'middle',
-                            bgcolor: 'rgba(255, 255, 255, 0.8)',
-                            bordercolor: 'black',
-                            borderwidth: 0.5,
-                            borderpad: 2
-                        });
-                    }
-
-                    // Diagnosis marker
-                    if (data.diagnosis[i] && data.diagnosis[i][j]) {
-                        annotations.push({
-                            x: monthLabel,
-                            y: patientId,
-                            text: '*',
-                            showarrow: false,
-                            font: { size: 28, color: 'purple', family: 'Arial', weight: 'bold' },
-                            xanchor: 'center',
-                            yanchor: 'middle'
-                        });
-                    }
-                }
-            }
 
             // Create hover text
             const hoverText = data.pred.map((row, i) => {
@@ -404,144 +274,90 @@ def create_html_dashboard(heatmap_data, output_dir):
                     let text = `<b>Patient:</b> ${data.patient_ids[i]}<br>`;
                     text += `<b>Month:</b> ${data.month_labels[j]}<br>`;
                     text += `<b>Pred:</b> ${pred === null ? 'N/A' : pred.toFixed(3)}<br>`;
-                    if (data.lrads[i] && data.lrads[i][j] !== null && !isNaN(data.lrads[i][j])) {
+                    if (data.lrads[i][j] !== null) {
                         text += `<b>LRADS:</b> ${Math.round(data.lrads[i][j])}<br>`;
                     }
-                    if (data.diagnosis[i] && data.diagnosis[i][j]) {
-                        text += `<b style="color:purple;">★ DIAGNOSIS MONTH</b>`;
+                    if (data.diagnosis[i][j]) {
+                        text += `<b style="color:purple;">★ DIAGNOSIS</b>`;
                     }
                     return text;
                 });
             });
 
-            // Create numeric indices for heatmap (0, 1, 2, ...)
-            const xIndices = Array.from({length: nMonths}, (_, i) => i);
-            const yIndices = Array.from({length: nPatients}, (_, i) => i);
-
-            // Create trace with numeric indices
-            const trace = {
-                z: data.pred,
-                x: xIndices,
-                y: yIndices,
-                type: 'heatmap',
-                colorscale: 'RdYlGn-r',
-                zmin: 0,
-                zmax: 1,
-                hovertemplate: '%{customdata}<extra></extra>',
-                customdata: hoverText,
-                colorbar: {
-                    title: `Year ${currentYear}<br>Cancer<br>Prob`,
-                    thickness: 15,
-                    len: 0.7,
-                }
-            };
-
-            // Adjust annotations to use numeric indices
-            const numericAnnotations = [];
+            // Create annotations
+            const annotations = [];
             for (let i = 0; i < nPatients; i++) {
                 for (let j = 0; j < nMonths; j++) {
-                    // LRADS annotation
-                    if (data.lrads[i] && data.lrads[i][j] !== null && !isNaN(data.lrads[i][j])) {
-                        numericAnnotations.push({
-                            x: j,
-                            y: i,
+                    // LRADS
+                    if (data.lrads[i][j] !== null) {
+                        annotations.push({
+                            x: data.month_labels[j],
+                            y: data.patient_ids[i],
                             text: `${Math.round(data.lrads[i][j])}`,
                             showarrow: false,
-                            font: { size: 10, color: 'black', family: 'monospace', weight: 'bold' },
-                            xanchor: 'center',
-                            yanchor: 'middle',
-                            bgcolor: 'rgba(255, 255, 255, 0.8)',
-                            bordercolor: 'black',
-                            borderwidth: 0.5,
-                            borderpad: 1
+                            font: { size: 10, color: 'black', weight: 'bold' },
+                            xanchor: 'center', yanchor: 'middle'
                         });
                     }
-
                     // Diagnosis marker
-                    if (data.diagnosis[i] && data.diagnosis[i][j]) {
-                        numericAnnotations.push({
-                            x: j,
-                            y: i,
+                    if (data.diagnosis[i][j]) {
+                        annotations.push({
+                            x: data.month_labels[j],
+                            y: data.patient_ids[i],
                             text: '*',
                             showarrow: false,
-                            font: { size: 22, color: 'purple', family: 'Arial', weight: 'bold' },
-                            xanchor: 'center',
-                            yanchor: 'middle'
+                            font: { size: 20, color: 'purple', weight: 'bold' },
+                            xanchor: 'center', yanchor: 'middle'
                         });
                     }
                 }
             }
 
-            // Calculate dynamic height based on number of patients
-            const minHeight = 600;
-            const heightPerPatient = 30;
-            const plotHeight = Math.max(minHeight, nPatients * heightPerPatient);
+            const trace = {
+                z: data.pred,
+                x: data.month_labels,
+                y: data.patient_ids,
+                type: 'heatmap',
+                colorscale: rdylgn_r,
+                zmin: 0, zmax: 1,
+                hovertemplate: '%{customdata}<extra></extra>',
+                customdata: hoverText,
+                colorbar: { title: `Year ${currentYear}`, thickness: 15, len: 0.7 }
+            };
 
             const layout = {
                 title: {
-                    text: `TANGERINE ${currentPatientType === 'cancer_only' ? 'Cancer-Only' : currentPatientType === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Predictions (Year ${currentYear})<br>` +
-                          `<sub>n=${data.n_total} (Cancer=${data.n_cancer}, Non-Cancer=${data.n_non_cancer})</sub>`,
+                    text: `TANGERINE ${currentPatientType === 'cancer_only' ? 'Cancer-Only' : currentPatientType === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} (Y${currentYear})<br><sub>n=${data.n_total} (Cancer=${data.n_cancer}, Non-Cancer=${data.n_non_cancer})</sub>`,
                     font: { size: 16 }
                 },
-                xaxis: {
-                    title: 'Year-Month',
-                    tickmode: 'linear',
-                    tick0: 0,
-                    dtick: Math.max(1, Math.floor(nMonths / 12)),
-                    ticktext: data.month_labels.filter((_, i) => i % Math.max(1, Math.floor(nMonths / 12)) === 0),
-                    tickvals: data.month_labels.map((_, i) => i).filter(i => i % Math.max(1, Math.floor(nMonths / 12)) === 0),
-                    tickangle: 45,
-                    tickfont: { size: 11 }
-                },
-                yaxis: {
-                    title: 'Patient ID',
-                    tickmode: 'linear',
-                    tick0: 0,
-                    dtick: Math.max(1, Math.floor(nPatients / 20)),
-                    ticktext: data.patient_ids.filter((_, i) => i % Math.max(1, Math.floor(nPatients / 20)) === 0),
-                    tickvals: data.patient_ids.map((_, i) => i).filter(i => i % Math.max(1, Math.floor(nPatients / 20)) === 0),
-                    tickfont: { size: 10 }
-                },
-                height: plotHeight,
+                xaxis: { title: 'Year-Month', type: 'category', tickangle: 45, tickfont: { size: 11 } },
+                yaxis: { title: 'Patient ID', type: 'category', tickfont: { size: 10 } },
+                height: Math.max(600, nPatients * 30),
                 margin: { l: 120, b: 120, t: 140, r: 100 },
                 hovermode: 'closest',
-                annotations: numericAnnotations
+                annotations: annotations
             };
 
-            Plotly.newPlot('heatmap', [trace], layout, {responsive: true, toImageButtonOptions: {format: 'png', width: 1400, height: plotHeight}});
+            Plotly.newPlot('heatmap', [trace], layout, {responsive: true});
         }
 
-        // Event listeners
         document.getElementById('yearSelect').addEventListener('change', (e) => {
             currentYear = parseInt(e.target.value);
             updateHeatmap();
         });
 
-        document.getElementById('btnCancerOnly').addEventListener('click', () => {
-            currentPatientType = 'cancer_only';
-            document.getElementById('btnCancerOnly').classList.add('active');
-            document.getElementById('btnNonCancerOnly').classList.remove('active');
-            document.getElementById('btnAllPatients').classList.remove('active');
-            updateHeatmap();
+        ['Cancer', 'NonCancer', 'All'].forEach(type => {
+            const btn = document.getElementById(`btn${type}Only`);
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                const typeMap = {'Cancer': 'cancer_only', 'NonCancer': 'non_cancer_only', 'All': 'all_patients'};
+                currentPatientType = typeMap[type];
+                document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateHeatmap();
+            });
         });
 
-        document.getElementById('btnNonCancerOnly').addEventListener('click', () => {
-            currentPatientType = 'non_cancer_only';
-            document.getElementById('btnNonCancerOnly').classList.add('active');
-            document.getElementById('btnCancerOnly').classList.remove('active');
-            document.getElementById('btnAllPatients').classList.remove('active');
-            updateHeatmap();
-        });
-
-        document.getElementById('btnAllPatients').addEventListener('click', () => {
-            currentPatientType = 'all_patients';
-            document.getElementById('btnAllPatients').classList.add('active');
-            document.getElementById('btnCancerOnly').classList.remove('active');
-            document.getElementById('btnNonCancerOnly').classList.remove('active');
-            updateHeatmap();
-        });
-
-        // Initialize
         updateHeatmap();
     </script>
 </body>
@@ -551,29 +367,19 @@ def create_html_dashboard(heatmap_data, output_dir):
     output_path = os.path.join(output_dir, 'tangerine_interactive_heatmaps.html')
     with open(output_path, 'w') as f:
         f.write(html_content)
-
     return output_path
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate interactive TANGERINE heatmap dashboard')
-    parser.add_argument('--output_dir', default=None,
-                        help='Output directory for HTML file')
-
-    args = parser.parse_args()
-
     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    output_dir = os.path.join(parent_dir, 'results_20260605/heatmaps')
+    os.makedirs(output_dir, exist_ok=True)
 
-    if args.output_dir is None:
-        args.output_dir = os.path.join(parent_dir, 'results_20260605/heatmaps')
-
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    print("Generating heatmap data for all year/patient type combinations...")
+    print("Generating heatmap data...")
     heatmap_data = generate_all_heatmap_data(parent_dir)
 
-    print("Creating interactive HTML dashboard...")
-    output_path = create_html_dashboard(heatmap_data, args.output_dir)
+    print("Creating HTML dashboard...")
+    output_path = create_html_dashboard(heatmap_data, output_dir)
 
-    print(f"\n✅ Interactive dashboard created!")
-    print(f"📊 Open in browser: {output_path}")
+    print(f"\n✅ Dashboard created!")
+    print(f"📊 Open: {output_path}")
