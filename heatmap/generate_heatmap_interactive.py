@@ -315,14 +315,14 @@ def create_html_dashboard(heatmap_data, output_dir):
                 });
             }
 
-            // Calculate height based on patient count
+            // Calculate height based on patient count - minimal padding
             let height = 600;
             if (d.patient_ids.length <= 12) {
                 height = 600 + d.patient_ids.length * 20;  // Cancer-only: 20px per row
             } else if (d.patient_ids.length <= 50) {
-                height = 200 + d.patient_ids.length * 14;  // Non-cancer: 14px per row
+                height = 50 + d.patient_ids.length * 14;  // Non-cancer: 14px per row, minimal padding
             } else {
-                height = 300 + d.patient_ids.length * 11;  // All-patients: 11px per row
+                height = 80 + d.patient_ids.length * 11;  // All-patients: 11px per row, minimal padding
             }
 
             const layout = {
