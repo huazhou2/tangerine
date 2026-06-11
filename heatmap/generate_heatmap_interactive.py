@@ -325,10 +325,18 @@ def create_html_dashboard(heatmap_data, output_dir):
                 height = 80 + d.patient_ids.length * 11;  // All-patients: 11px per row, minimal padding
             }
 
+            // Use smaller top margin for larger plots (non-cancer, all-patients)
+            let topMargin = 30;
+            if (d.patient_ids.length > 50) {
+                topMargin = 10;  // All-patients: minimal margin
+            } else if (d.patient_ids.length > 12) {
+                topMargin = 15;  // Non-cancer: reduced margin
+            }
+
             const layout = {
                 title: {
                     text: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
-                    y: 0.99
+                    y: 0.995
                 },
                 xaxis: { title: 'Month', type: 'category' },
                 yaxis: {
@@ -339,7 +347,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                     autorange: 'reversed'
                 },
                 height: height,
-                margin: { l: 120, b: 20, t: 30, r: 80 },
+                margin: { l: 120, b: 15, t: topMargin, r: 80 },
                 hovermode: 'closest',
                 shapes: annotations
             };
