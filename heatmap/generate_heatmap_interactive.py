@@ -213,6 +213,28 @@ def create_html_dashboard(heatmap_data, output_dir):
 
             console.log(`Plotting ${key}: ${d.patient_ids.length} patients, ${d.month_labels.length} months`);
 
+            // Create hover text with LRADS and diagnosis info
+            const hoverText = [];
+            const customData = [];
+            for (let i = 0; i < d.patient_ids.length; i++) {
+                const row = [];
+                const customRow = [];
+                for (let j = 0; j < d.month_labels.length; j++) {
+                    let text = `Patient: ${d.patient_ids[i]}<br>Month: ${d.month_labels[j]}<br>Pred: ${d.pred[i][j] !== null ? d.pred[i][j].toFixed(3) : 'N/A'}`;
+
+                    if (d.lrads[i][j] !== null) {
+                        text += `<br>LRADS: ${Math.round(d.lrads[i][j])}`;
+                    }
+                    if (d.diagnosis[i][j]) {
+                        text += `<br><b style="color:purple;">★ DIAGNOSIS MONTH</b>`;
+                    }
+                    row.push(text);
+                    customRow.push(d.pred[i][j]);
+                }
+                hoverText.push(row);
+                customData.push(customRow);
+            }
+
             const trace = {
                 z: d.pred,
                 x: d.month_labels,
@@ -221,39 +243,21 @@ def create_html_dashboard(heatmap_data, output_dir):
                 colorscale: rdylgn_r,
                 zmin: 0,
                 zmax: 1,
+                hovertemplate: '%{customdata.text}<extra></extra>',
+                customdata: d.pred.map((row, i) => row.map((val, j) => ({
+                    text: (() => {
+                        let text = `Patient: ${d.patient_ids[i]}<br>Month: ${d.month_labels[j]}<br>Pred: ${val !== null ? val.toFixed(3) : 'N/A'}`;
+                        if (d.lrads[i][j] !== null) {
+                            text += `<br>LRADS: ${Math.round(d.lrads[i][j])}`;
+                        }
+                        if (d.diagnosis[i][j]) {
+                            text += `<br><b style="color:purple;">★ DIAGNOSIS</b>`;
+                        }
+                        return text;
+                    })()
+                }))),
                 colorbar: { title: `Y${year}` }
             };
-
-            // Create annotations for LRADS and diagnosis
-            const annotations = [];
-            for (let i = 0; i < d.patient_ids.length; i++) {
-                for (let j = 0; j < d.month_labels.length; j++) {
-                    // LRADS score
-                    if (d.lrads[i] && d.lrads[i][j] !== null) {
-                        annotations.push({
-                            x: d.month_labels[j],
-                            y: d.patient_ids[i],
-                            text: String(Math.round(d.lrads[i][j])),
-                            showarrow: false,
-                            font: { size: 11, color: 'black', weight: 'bold' },
-                            xanchor: 'center',
-                            yanchor: 'middle'
-                        });
-                    }
-                    // Diagnosis marker
-                    if (d.diagnosis[i] && d.diagnosis[i][j]) {
-                        annotations.push({
-                            x: d.month_labels[j],
-                            y: d.patient_ids[i],
-                            text: '*',
-                            showarrow: false,
-                            font: { size: 20, color: 'purple', weight: 'bold' },
-                            xanchor: 'center',
-                            yanchor: 'middle'
-                        });
-                    }
-                }
-            }
 
             const layout = {
                 title: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
@@ -261,8 +265,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                 yaxis: { title: 'Patient ID', type: 'category' },
                 height: Math.max(600, d.patient_ids.length * 25),
                 margin: { l: 120, b: 120, t: 100, r: 100 },
-                hovermode: 'closest',
-                annotations: annotations
+                hovermode: 'closest'
             };
 
             Plotly.newPlot('heatmap', [trace], layout, {responsive: true});
