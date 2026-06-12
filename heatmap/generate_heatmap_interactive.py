@@ -325,21 +325,21 @@ def create_html_dashboard(heatmap_data, output_dir):
                 height = 80 + d.patient_ids.length * 11;  // All-patients: 11px per row, minimal padding
             }
 
-            // Use much smaller margins for larger plots
-            let topMargin = 25;
+            // Minimize margins between title and plot border
+            let topMargin = 15;
             let bottomMargin = 15;
             if (d.patient_ids.length > 50) {
-                topMargin = 3;   // All-patients: extremely tight
+                topMargin = 0;   // All-patients: zero top margin
                 bottomMargin = 10;
             } else if (d.patient_ids.length > 12) {
-                topMargin = 5;   // Non-cancer: very tight
+                topMargin = 0;   // Non-cancer: zero top margin
                 bottomMargin = 10;
             }
 
             const layout = {
                 title: {
                     text: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
-                    y: 0.97,
+                    y: 0.998,
                     yanchor: 'top'
                 },
                 xaxis: { title: 'Month', type: 'category' },
