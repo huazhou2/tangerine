@@ -365,6 +365,20 @@ def create_html_dashboard(heatmap_data, output_dir):
                 shapes: annotations
             };
 
+            // Add top x-axis for non-cancer and all-patients views
+            if (ptype !== 'cancer_only') {
+                layout.xaxis2 = {
+                    type: 'category',
+                    tickmode: 'linear',
+                    tick0: 0,
+                    dtick: 6,
+                    tickfont: { size: 12 },
+                    tickangle: -90,
+                    side: 'top',
+                    overlaying: 'x'
+                };
+            }
+
             Plotly.newPlot('heatmap', [trace, lradsTrace, diagnosisTrace], layout, {responsive: true});
         }
 
