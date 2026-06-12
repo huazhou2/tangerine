@@ -339,7 +339,7 @@ def create_html_dashboard(heatmap_data, output_dir):
             const layout = {
                 title: {
                     text: `TANGERINE ${ptype === 'cancer_only' ? 'Cancer-Only' : ptype === 'non_cancer_only' ? 'Non-Cancer Only' : 'All Patients'} Year ${year}`,
-                    y: 0.8,
+                    y: 0.97,
                     yanchor: 'top'
                 },
                 xaxis: { title: 'Month', type: 'category' },
