@@ -37,7 +37,8 @@ from pathlib import Path
 
 # TANGERINE model code — cloned from github.com/niccolo246/3D-MAE-MedImaging
 # Use relative path to tangerine model (works both locally and on cluster)
-tangerine_path = Path(__file__).parent.parent / 'tangerine' / '3D-MAE-MedImaging'
+# Path structure: lung_ct/models/tangerine_6yrs_20260611_full/5fold/ -> lung_ct/models/tangerine/
+tangerine_path = Path(__file__).parent.parent.parent / 'tangerine' / '3D-MAE-MedImaging'
 sys.path.insert(0, str(tangerine_path))
 
 import models_vit
