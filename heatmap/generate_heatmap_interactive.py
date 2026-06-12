@@ -348,7 +348,8 @@ def create_html_dashboard(heatmap_data, output_dir):
                     tickmode: 'linear',
                     tick0: 0,
                     dtick: 6,
-                    tickfont: { size: 12 }
+                    tickfont: { size: 12 },
+                    tickangle: -90
                 },
                 yaxis: {
                     title: 'Patient ID',
