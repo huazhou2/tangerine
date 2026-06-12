@@ -325,15 +325,21 @@ def create_html_dashboard(heatmap_data, output_dir):
                 height = 80 + d.patient_ids.length * 11;  // All-patients: 11px per row, minimal padding
             }
 
-            // Minimize margins between title and plot border
+            // Minimize margins - much tighter for large plots
             let topMargin = 15;
-            let bottomMargin = 80;
+            let bottomMargin = 60;
+            let leftMargin = 120;
+            let rightMargin = 80;
             if (d.patient_ids.length > 50) {
-                topMargin = 0;   // All-patients: zero top margin
-                bottomMargin = 80;
+                topMargin = 5;    // All-patients: minimal top margin
+                bottomMargin = 60;
+                leftMargin = 60;  // Smaller left margin without y-axis title
+                rightMargin = 40; // Smaller right margin
             } else if (d.patient_ids.length > 12) {
-                topMargin = 0;   // Non-cancer: zero top margin
-                bottomMargin = 80;
+                topMargin = 5;    // Non-cancer: minimal top margin
+                bottomMargin = 60;
+                leftMargin = 60;  // Smaller left margin without y-axis title
+                rightMargin = 40; // Smaller right margin
             }
 
             const layout = {
@@ -343,7 +349,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                     yanchor: 'top'
                 },
                 xaxis: {
-                    title: 'Month',
+                    title: ptype === 'cancer_only' ? 'Month' : '',
                     type: 'category',
                     tickmode: 'linear',
                     tick0: 0,
@@ -352,7 +358,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                     tickangle: -90
                 },
                 yaxis: {
-                    title: 'Patient ID',
+                    title: ptype === 'cancer_only' ? 'Patient ID' : '',
                     type: 'category',
                     categoryorder: 'array',
                     categoryarray: d.patient_ids,
@@ -360,7 +366,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                     tickfont: { size: 10 }
                 },
                 height: height,
-                margin: { l: 120, b: bottomMargin, t: topMargin, r: 80 },
+                margin: { l: leftMargin, b: bottomMargin, t: topMargin, r: rightMargin },
                 hovermode: 'closest',
                 shapes: annotations
             };
