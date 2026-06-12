@@ -327,13 +327,13 @@ def create_html_dashboard(heatmap_data, output_dir):
 
             // Minimize margins between title and plot border
             let topMargin = 15;
-            let bottomMargin = 50;
+            let bottomMargin = 80;
             if (d.patient_ids.length > 50) {
                 topMargin = 0;   // All-patients: zero top margin
-                bottomMargin = 50;
+                bottomMargin = 80;
             } else if (d.patient_ids.length > 12) {
                 topMargin = 0;   // Non-cancer: zero top margin
-                bottomMargin = 50;
+                bottomMargin = 80;
             }
 
             const layout = {
