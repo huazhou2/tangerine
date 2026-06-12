@@ -258,7 +258,12 @@ def create_html_dashboard(heatmap_data, output_dir):
                         return text;
                     })()
                 }))),
-                colorbar: { title: `Y${year}` }
+                colorbar: {
+                    title: `Y${year}`,
+                    thickness: 15,
+                    len: 0.5,
+                    x: 1.02
+                }
             };
 
             // Create overlay traces for LRADS (text) and diagnosis (*)
