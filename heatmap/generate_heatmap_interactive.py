@@ -258,12 +258,7 @@ def create_html_dashboard(heatmap_data, output_dir):
                         return text;
                     })()
                 }))),
-                colorbar: {
-                    title: `Y${year}`,
-                    thickness: 15,
-                    len: 0.5,
-                    x: 1.02
-                }
+                colorbar: { title: `Y${year}` }
             };
 
             // Create overlay traces for LRADS (text) and diagnosis (*)
@@ -332,13 +327,13 @@ def create_html_dashboard(heatmap_data, output_dir):
 
             // Minimize margins between title and plot border
             let topMargin = 15;
-            let bottomMargin = 15;
+            let bottomMargin = 50;
             if (d.patient_ids.length > 50) {
                 topMargin = 0;   // All-patients: zero top margin
-                bottomMargin = 10;
+                bottomMargin = 50;
             } else if (d.patient_ids.length > 12) {
                 topMargin = 0;   // Non-cancer: zero top margin
-                bottomMargin = 10;
+                bottomMargin = 50;
             }
 
             const layout = {
@@ -347,13 +342,21 @@ def create_html_dashboard(heatmap_data, output_dir):
                     y: 0.998,
                     yanchor: 'top'
                 },
-                xaxis: { title: 'Month', type: 'category' },
+                xaxis: {
+                    title: 'Month',
+                    type: 'category',
+                    tickmode: 'linear',
+                    tick0: 0,
+                    dtick: 6,
+                    tickfont: { size: 12 }
+                },
                 yaxis: {
                     title: 'Patient ID',
                     type: 'category',
                     categoryorder: 'array',
                     categoryarray: d.patient_ids,
-                    autorange: 'reversed'
+                    autorange: 'reversed',
+                    tickfont: { size: 10 }
                 },
                 height: height,
                 margin: { l: 120, b: bottomMargin, t: topMargin, r: 80 },
