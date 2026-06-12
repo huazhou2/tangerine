@@ -116,50 +116,25 @@ echo "✓ All 5 fold splits ready!"
 echo ""
 
 # ════════════════════════════════════════════════════════════════════════════════
-# STEP 2: Generate training scripts for all 5 folds
+# STEP 2: Submit all 5 fold training jobs
 # ════════════════════════════════════════════════════════════════════════════════
 
 echo "════════════════════════════════════════════════════════════════════════════"
-echo "STEP 2: GENERATING TRAINING SCRIPTS FOR ALL 5 FOLDS"
-echo "════════════════════════════════════════════════════════════════════════════"
-echo ""
-
-if [ ! -f "train_fold0.sh" ]; then
-    echo "✗ ERROR: train_fold0.sh template not found!"
-    exit 1
-fi
-
-python generate_fold_scripts.py > /dev/null 2>&1
-
-if [ $? -eq 0 ]; then
-    echo "✓ Training scripts generated (fold1-4.sh created from template)"
-else
-    echo "✗ Failed to generate training scripts!"
-    exit 1
-fi
-
-echo ""
-
-# ════════════════════════════════════════════════════════════════════════════════
-# STEP 3: Submit all 5 fold training jobs
-# ════════════════════════════════════════════════════════════════════════════════
-
-echo "════════════════════════════════════════════════════════════════════════════"
-echo "STEP 3: SUBMITTING 5 FOLD TRAINING JOBS"
+echo "STEP 2: SUBMITTING 5 FOLD TRAINING JOBS"
 echo "════════════════════════════════════════════════════════════════════════════"
 echo ""
 
 mkdir -p logs
 
+if [ ! -f "train_fold.sh" ]; then
+    echo "✗ ERROR: train_fold.sh not found!"
+    exit 1
+fi
+
 JOB_IDS=()
 for i in {0..4}; do
-    if [ ! -f "train_fold${i}.sh" ]; then
-        echo "✗ ERROR: train_fold${i}.sh not found!"
-        exit 1
-    fi
-
     echo "Submitting fold $i..."
-    JOB_ID=$(sbatch train_fold${i}.sh | awk '{print $4}')
+    JOB_ID=$(sbatch train_fold.sh $i | awk '{print $4}')
     JOB_IDS+=($JOB_ID)
     echo "  ✓ Fold $i: Job ID $JOB_ID"
 done
@@ -218,8 +193,7 @@ echo "⏱️ EXPECTED TIMELINE"
 echo "───────────────────────────────────────────────────────────────────────────"
 echo ""
 echo "  Data preparation:         Complete ✓"
-echo "  Training scripts:          Complete ✓"
-echo "  Job submission:            Complete ✓"
+echo "  Job submission:            Complete ✓ (5 jobs with parameters)"
 echo ""
 echo "  5 fold training:           ~2-4 hours (parallel) or ~12-20 hours (sequential)"
 echo "  Automatic aggregation:     ~1 minute (after all folds complete)"
