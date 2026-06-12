@@ -1,4 +1,13 @@
 #!/bin/bash
+#SBATCH --job-name=tangerine_fold
+#SBATCH --output=logs/tangerine_fold_%j.out
+#SBATCH --error=logs/tangerine_fold_%j.err
+#SBATCH --time=28-00:00:00
+#SBATCH --partition=a100_long
+#SBATCH --gres=gpu:1
+#SBATCH --mem=64G
+#SBATCH --cpus-per-task=8
+
 #
 # Parameterized training script for 5-fold CV
 # Usage: sbatch train_fold.sh 0  (for fold 0)
@@ -13,15 +22,6 @@ if ! [[ "$FOLD" =~ ^[0-4]$ ]]; then
     echo "Error: FOLD must be 0-4, got: $FOLD"
     exit 1
 fi
-
-#SBATCH --job-name=tangerine_fold_FOLD
-#SBATCH --output=logs/tangerine_fold_FOLD_%j.out
-#SBATCH --error=logs/tangerine_fold_FOLD_%j.err
-#SBATCH --time=28-00:00:00
-#SBATCH --partition=a100_long
-#SBATCH --gres=gpu:1
-#SBATCH --mem=64G
-#SBATCH --cpus-per-task=8
 
 mkdir -p logs
 
