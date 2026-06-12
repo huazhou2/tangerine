@@ -31,7 +31,7 @@ ENCODER_WEIGHTS="$TANGERINE_DIR/pretrained/mae_pretrained.pth"
 METADATA_CSV="$BASE_DIR/lungct_with_mrn_anonacc.csv"
 
 FOLD=0
-DATASET_DIR="$SCRIPT_DIR/dataset_splits_fold${FOLD}"
+DATASET_DIR="$SCRIPT_DIR/dataset_splits/fold${FOLD}"
 RUN_DIR="$SCRIPT_DIR/outputs/fold${FOLD}_gamma2_pr_auc_$(date +%Y%m%d_%H%M%S)"
 
 mkdir -p "$SCRIPT_DIR/logs"

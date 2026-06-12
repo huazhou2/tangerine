@@ -88,12 +88,13 @@ echo "════════════════════════�
 echo ""
 
 for FOLD in 0 1 2 3 4; do
-    FOLD_DIR="./dataset_splits_fold${FOLD}"
+    FOLD_DIR="./dataset_splits/fold${FOLD}"
 
     if [ -d "$FOLD_DIR" ]; then
         echo "Fold $FOLD: Splits already exist. Skipping..."
     else
         echo "Fold $FOLD: Generating splits..."
+        mkdir -p ./dataset_splits
         python prepare_survival_dataset.py \
             --metadata_csv "$METADATA_CSV" \
             --images_dir "$IMAGES_DIR" \
