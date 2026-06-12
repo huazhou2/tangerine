@@ -3,9 +3,9 @@
 #SBATCH --output=logs/aggregate_5fold_%j.out
 #SBATCH --error=logs/aggregate_5fold_%j.err
 #SBATCH --time=00:10:00
-#SBATCH --partition=cpu
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=8G
+#SBATCH --partition=a100_long
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
 
 echo "════════════════════════════════════════════════════════════════════════════"
 echo "AGGREGATING 5-FOLD RESULTS"
